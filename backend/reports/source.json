@@ -1,0 +1,7 @@
+{
+  "source_file": "hackathon_preli_dataset.xlsx",
+  "sheet": "bangladesh_dengue_large_dataset",
+  "xlsx_sha256": "23e4ad6b2ca297707e16b0670a4863bfa2d9def9dea4eb66c34df3051afcdafc",
+  "csv_sha256": "9f15d4fd4238bb97e98cb0001641a0319ae7578fd244a1bb7552e5786322682c",
+  "rows": 31320
+}

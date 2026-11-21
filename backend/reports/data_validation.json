@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "rows": 31320,
+  "wards": 60,
+  "cities": {
+    "Chattogram": 10,
+    "Dhaka North": 20,
+    "Dhaka South": 20,
+    "Gazipur": 5,
+    "Narayanganj": 5
+  },
+  "weeks_per_ward": 522,
+  "first_week": "2016-01-04",
+  "last_week": "2025-12-29",
+  "total_cases": 82572,
+  "checks": {
+    "expected_columns": true,
+    "no_missing_values": true,
+    "unique_ward_date": true,
+    "same_weeks_for_every_ward": true,
+    "strictly_weekly_spacing": true,
+    "each_ward_in_one_city": true,
+    "traits_constant_per_ward": true,
+    "humidity_0_100": true,
+    "rainfall_non_negative": true,
+    "cases_non_negative_integer": true,
+    "min_avg_max_temperature_order": true
+  },
+  "csv_sha256": "9f15d4fd4238bb97e98cb0001641a0319ae7578fd244a1bb7552e5786322682c"
+}
