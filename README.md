@@ -29,8 +29,7 @@ if ((Get-FileHash $workbook).Hash -ne $manifest.xlsx_sha256) { throw 'Workbook d
 if ($LASTEXITCODE -ne 0) { throw 'Workbook conversion failed' }
 if ((Get-FileHash backend/data/official.csv).Hash -ne $manifest.csv_sha256) { throw 'CSV differs from the model input. Use the authorised byte-identical copy.' }
 if (!(Test-Path backend/reports/validation.json)) { throw 'Missing ML validation report' }
-Push-Location backend
-..\.venv\Scripts\python.exe -m uvicorn app:app --port 8000
+.\start.cmd
 ~~~
 
 Open http://127.0.0.1:8000 for the dashboard or http://127.0.0.1:8000/docs for the API. Keep the generated CSV private and out of Git staging. The converter rewrites the local source manifest. Use the committed manifest as the reference for any retry.
@@ -49,10 +48,22 @@ Pandas computes weather and case lags separately within each ward. FastAPI loads
 
 | Member | Responsibility |
 |---|---|
-| S | Dataset provenance, validation, pipeline checks and submission documentation |
-| M | Forecast models, evaluation, model artefact and FastAPI |
-| F | React dashboard, interface and API integration |
+| S (GitHub: shahrudrahman) | Dataset provenance, validation, pipeline checks and submission documentation |
+| M (commit author: Marwa Mohammed Jashim) | Forecast models, evaluation, model artefact and FastAPI |
+| F (GitHub: MohonaFyrin) | React dashboard, interface and API integration |
 
 The team handoff identifies Claude via Claude Code for generating and testing code and documentation. OpenAI Codex compared the existing ML report with the architecture and prepared the submission documentation and demo script. Runtime inference uses the saved local model. It calls no external AI or weather APIs. The stack uses FastAPI, Uvicorn, pandas, NumPy, SciPy, scikit-learn, joblib, React and Vite.
 
 [Two-minute live demo script](docs/DEMO_SCRIPT.md)
+
+## Local operation and privacy
+
+After the private inputs and frontend build are in place, run `.\start.cmd` from the repository root for subsequent starts. The launcher binds to the loopback address. Public, Officer and Hospital are demonstration views with no login or access control. Use aggregate ward data only. Keep the workbook outside the repository. In a fresh clone, add a local Git exclusion before creating the CSV:
+
+~~~powershell
+Add-Content .git/info/exclude '/backend/data/official.csv'
+~~~
+
+The Public view includes Bangla/English education and source links to WHO and CDC. Officer rankings support prioritisation and Hospital comparisons show ward burden over time. The API exposes health, wards, issue weeks, forecast, forecast/all, priority, compare, history and metrics under `/api`. Interactive parameters and responses are available at `/docs`.
+
+For frontend development, run FastAPI on port 8000 and run `npm run dev` in `frontend`. To run backend tests, install `backend/requirements-dev.txt` in the same environment and run `python -m pytest -q tests` from `backend` using that environment. With the app running, the browser checks are available through `npm run test:e2e` in `frontend`.

@@ -43,7 +43,7 @@ Splits use **both issue and target dates**, so a training target can never fall 
 ## Model selection rationale
 Candidates per horizon: Ridge (scaled linear) vs `HistGradientBoostingRegressor(loss="poisson")`. Cases are non-negative counts with spikes
 in monsoon, so a Poisson-loss boosted tree captures non-linear rain-lag/season interactions and respects counts; it won validation MAE for all
-three horizons . Ridge is kept as the transparent comparator.
+three horizons. Ridge is kept as the transparent comparator.
 Baselines on the test set: **last observed week** and **ward training mean**.
 
 | Horizon | Test MAE | Test RMSE | Last-week baseline MAE / RMSE | Ward-mean baseline MAE |
@@ -66,7 +66,7 @@ Test-period tier agreement: 73–79 % exact (see Model Performance view). An 80 
 * Model and data are loaded **once** at start-up (`joblib`, compressed); features are built once in memory.
 * `lru_cache` on (issue week, horizon) → one vectorised `predict` for all 60 wards, reused by the grid, Top-10, ward detail and city totals (a test asserts 1 miss / ≥2 hits).
 * Deterministic GET responses carry `Cache-Control: public, max-age=300`; the UI also de-duplicates identical requests in memory.
-* Static React build is served by the same FastAPI process: one command, one port, ~3 MB data + ~1 MB model.
+* Static React build is served by the same FastAPI process: one command, one port, local dataset and saved model.
 
 ## Honesty constraints
 Forecasts are **retrospective replays** on data ending 2025-12-29, never live 2026 surveillance (banner + per-forecast label).
@@ -75,3 +75,4 @@ No map polygons or coordinates exist in the dataset, so the risk view is an acce
 
 The final eligible test issue weeks were 2025-12-15, 2025-12-08 and 2025-12-01 for the 2-, 3- and 4-week horizons respectively. Each has a recorded target by 2025-12-29. Reported metrics come from the team ML handoff (backend/reports/validation.json); the saved model in that handoff and this repository have identical SHA-256 hashes.
 
+Startup checks the CSV fingerprint against the saved model. A missing input, mismatched CSV or absent validation report prevents startup. Use the matching private inputs described in the README. The application serves bundled assets locally after the frontend has been built.
