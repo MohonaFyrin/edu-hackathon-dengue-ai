@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .env
+backend/data/official.csv
+backend/reports/validation.json
