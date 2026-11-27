@@ -19,3 +19,4 @@ backend/data/supply.csv
 backend/var/
 .run/
 deploy/
+vercel-deploy/

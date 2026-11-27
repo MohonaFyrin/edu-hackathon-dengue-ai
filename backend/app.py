@@ -114,6 +114,9 @@ async def invalid(_, exc: RequestValidationError):
 
 
 def store() -> Store:
+    # Loaded at startup by `lifespan`; serverless hosts (Vercel) may skip lifespan, so load on first use too.
+    if "store" not in app_state:
+        app_state["store"] = Store()
     return app_state["store"]
 
 

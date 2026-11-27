@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import math
+import os
 import json
 import sqlite3
 import uuid
@@ -26,7 +27,8 @@ from common import ROOT
 
 router = APIRouter(prefix="/api")
 GEO = ROOT / "geo"
-VAR = ROOT / "var"
+# Serverless hosts (Vercel) only allow writing to /tmp; reports there are temporary.
+VAR = Path("/tmp/dengue-var") if os.environ.get("VERCEL") else ROOT / "var"
 DB = VAR / "reports.db"
 PHOTOS = VAR / "photos"
 MAX_PHOTO_BYTES = 1_500_000
@@ -75,8 +77,8 @@ def facilities(city: str | None = None, type: Literal["hospital", "clinic", "pha
 # Field reports
 # ---------------------------------------------------------------------------
 def _db() -> sqlite3.Connection:
-    VAR.mkdir(exist_ok=True)
-    PHOTOS.mkdir(exist_ok=True)
+    VAR.mkdir(parents=True, exist_ok=True)
+    PHOTOS.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB, timeout=5)
     con.row_factory = sqlite3.Row
     con.execute("""CREATE TABLE IF NOT EXISTS reports (
