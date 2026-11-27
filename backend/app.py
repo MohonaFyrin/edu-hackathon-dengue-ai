@@ -16,8 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from common import (DATA_CSV, FEATURES, HORIZONS, MODEL_PATH, REPORTS, ROOT, TIERS, TRAIN_END,
-                    VAL_END, add_features, estimate_tier_index, load_data, sha256_file)
+from common import (DATA_CSV, FEATURES, HORIZONS, MODEL_PATH, REPORTS, ROOT, SUPPLY_CSV, TIERS,
+                    TRAIN_END, VAL_END, add_features, estimate_tier_index, load_data, sha256_file)
 
 Horizon = Annotated[int, Query(ge=2, le=4, description="Weeks ahead: 2, 3 or 4")]
 DATA_NOTE = ("Retrospective forecasts built from the supplied dataset (to 2025-12-29). "
@@ -54,6 +54,13 @@ class Store:
         self.traits = self.df.groupby("ward_id")[
             ["population_density_sqkm", "water_logging_risk_index", "sanitation_score"]].first()
         self.traits_pct = self.traits.rank(pct=True)
+        # Phase 2: default bed capacity = each ward's 90th-percentile weekly bed requirement in the
+        # training period (<= 2022), minimum 1. The dataset has no capacity column, so this is a
+        # disclosed planning assumption that officers can scale or override.
+        supply = pd.read_csv(SUPPLY_CSV, parse_dates=["date"])
+        tr = supply[supply.date <= TRAIN_END]
+        self.default_capacity = (tr.groupby("ward_id").hospital_beds_required.quantile(0.9, interpolation="higher")
+                                 .clip(lower=1).astype(int).to_dict())
 
     def mode(self, target: date) -> str:
         return "in_sample" if pd.Timestamp(target) <= VAL_END else "out_of_sample"
@@ -70,14 +77,23 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Dengue Early Warning API", version="1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-                   allow_methods=["GET"], allow_headers=["*"])
+                   allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
 @app.middleware("http")
 async def cache_headers(request: Request, call_next):
     resp = await call_next(request)
-    if request.url.path.startswith("/api/") and request.url.path != "/api/health":
+    path = request.url.path
+    if path == "/api/health" or path.startswith("/api/reports"):
+        resp.headers["Cache-Control"] = "no-store"   # reachability check and live report data are never cached
+    elif request.method == "GET" and path.startswith("/api/"):
         resp.headers["Cache-Control"] = "public, max-age=300"
+    elif path.startswith("/assets/index-"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"  # content-hashed build files
+    elif not path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-cache"  # index.html and photos: revalidate so a rebuild is picked up
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
     return resp
 
 
@@ -88,8 +104,11 @@ async def api_error(_, exc: ApiError):
 
 @app.exception_handler(RequestValidationError)
 async def invalid(_, exc: RequestValidationError):
+    fields = sorted({str(e["loc"][-1]) for e in exc.errors() if e.get("loc")})
     return JSONResponse(status_code=422, content={"error": {
-        "code": "INVALID_INPUT", "message": "Check issue_date (YYYY-MM-DD), ward_id and horizon (2, 3 or 4)."}})
+        "code": "INVALID_INPUT", "fields": fields,
+        "message": "Check " + (", ".join(fields) if fields else "the request") +
+                   " (issue_date YYYY-MM-DD, horizon 2-4, stock 30-100%)."}})
 
 
 def store() -> Store:
@@ -266,6 +285,13 @@ def metrics():
     return {**s.metrics, "data": s.data_report, "feature_groups": {k: v for k, v in s.bundle["drivers"].items()},
             "note": DATA_NOTE, "selected_models": s.bundle["selected"]}
 
+
+from phase2 import router as phase2_router  # noqa: E402  (needs store/week_forecast defined above)
+
+from community import router as community_router  # noqa: E402
+
+app.include_router(phase2_router)
+app.include_router(community_router)
 
 frontend_dist = ROOT.parent / "frontend" / "dist"
 if frontend_dist.is_dir():

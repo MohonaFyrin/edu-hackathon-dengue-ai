@@ -1,4 +1,4 @@
-﻿// End-to-end browser test (Playwright + installed Chrome/Edge). Run with the app serving on BASE_URL.
+// End-to-end browser test (Playwright + installed Chrome/Edge). Run with the app serving on BASE_URL.
 //   node e2e/browser-test.mjs            (default http://127.0.0.1:8000)
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
@@ -142,7 +142,7 @@ await page.getByRole("button", { name: "হাসপাতাল" }).click();
 await page.waitForSelector("#cmp tbody tr");
 assert.equal(await page.locator("#cmp tbody tr").count(), 3);
 body = await text(page);
-for (const t of ["কোন সময়ের জন্য প্রস্তুতি নিতে চান?", "প্রস্তুতির জন্য করণীয়", "শয্যা-দখল"]) assert.ok(body.includes(t), `missing: ${t}`);
+for (const t of ["কোন সময়ের জন্য প্রস্তুতি নিতে চান?", "প্রস্তুতির জন্য করণীয়", "ভর্তির পূর্বাভাস নয়"]) assert.ok(body.includes(t), `missing: ${t}`);
 assert.equal(await page.locator(".actions li").count(), 3);
 assert.ok(!/ভর্তি রোগীর সংখ্যা: |bed occupancy: \d/.test(body));
 await page.locator(".filters select").nth(1).selectOption("");
@@ -150,7 +150,7 @@ await page.waitForFunction(() => document.body.innerText.includes("সব ওয
 await page.screenshot({ path: `${SHOTS}hospital-desktop.png`, fullPage: true });
 await toEnglish(page);
 body = await text(page);
-for (const t of ["Preparedness", "Which period are you preparing for?", "bed occupancy", "all wards combined"]) assert.ok(body.includes(t), `missing EN: ${t}`);
+for (const t of ["Preparedness", "Which period are you preparing for?", "not an admissions forecast", "all wards combined"]) assert.ok(body.includes(t), `missing EN: ${t}`);
 assert.ok(!BANGLA.test(stripToggle(body)), "Bangla text left in English Hospital view");
 await page.screenshot({ path: `${SHOTS}hospital-en-desktop.png`, fullPage: true });
 await toBangla(page);

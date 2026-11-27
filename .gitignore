@@ -15,3 +15,6 @@ backend/reports/validation.json
 **/.impeccable/questions/**
 **/.impeccable/live/**
 # impeccable-ignore-end
+backend/data/supply.csv
+backend/var/
+.run/

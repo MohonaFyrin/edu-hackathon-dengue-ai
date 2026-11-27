@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dengue Early Warning — Judge Q&amp;A Guide</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { --em: #125e4b; --emd: #0c4436; --ink: #1b2926; --muted: #4a5a55; --line: #cfdad4; --soft: #eef3ef; --warn: #a45d12; --crit: #b42318; --blue: #176c88; }
+  * { box-sizing: border-box; }
+  body { font: 10.4pt/1.5 "Segoe UI", "Nirmala UI", system-ui, sans-serif; color: var(--ink); margin: 0; }
+  h1 { font-size: 24pt; line-height: 1.15; color: var(--emd); margin: 0 0 6pt; }
+  h2 { font-size: 15pt; color: var(--emd); margin: 20pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.5pt solid var(--em); break-after: avoid; }
+  h3 { font-size: 11.5pt; color: var(--emd); margin: 12pt 0 3pt; break-after: avoid; }
+  p { margin: 4pt 0; }
+  ul, ol { margin: 4pt 0 4pt 16pt; padding: 0; } li { margin: 2pt 0; }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0; font-size: 9.4pt; break-inside: auto; }
+  th, td { border: .6pt solid var(--line); padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { background: var(--soft); color: var(--emd); }
+  tr { break-inside: avoid; }
+  code { font-family: Consolas, monospace; font-size: 9pt; background: var(--soft); padding: 0 2pt; border-radius: 2pt; }
+  .cover { padding: 30mm 0 0; break-after: page; }
+  .cover .sub { font-size: 13pt; color: var(--muted); margin-bottom: 18pt; }
+  .tag { display: inline-block; padding: 1pt 6pt; border-radius: 8pt; font-size: 8.6pt; font-weight: 600; }
+  .ok { background: #dff3e6; color: #14532d; } .part { background: #fdf0c4; color: #6b4400; } .no { background: #fbeceb; color: #8a1a12; }
+  .box { border: .8pt solid var(--line); background: #fbfcfa; border-radius: 4pt; padding: 7pt 10pt; margin: 7pt 0; break-inside: avoid; }
+  .warnbox { border-color: #ecd2b0; background: #fbf1e4; }
+  .qa { break-inside: avoid; margin: 7pt 0; }
+  .qa .q { font-weight: 700; color: var(--emd); }
+  .qa .a { margin-left: 12pt; }
+  .say { border: .8pt solid #b7d3dd; background: #e6f2f6; border-radius: 4pt; padding: 5pt 9pt; margin: 4pt 0; }
+  .muted { color: var(--muted); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .bn { font-family: "Nirmala UI", "Noto Sans Bengali", sans-serif; }
+  .pb { break-before: page; }
+  .toc li { margin: 1pt 0; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <h1>Dengue Early Warning &amp; Response System</h1>
+  <p class="bn" style="font-size:15pt;color:var(--em);margin:0 0 6pt">ডেঙ্গু আগাম সতর্কতা — পূর্বাভাস থেকে সাড়া</p>
+  <p class="sub">Judge Q&amp;A guide · EDU AI Engineering Hackathon 2026, Round 2 (onsite final)</p>
+  <div class="box">
+    <p><b>Phase 1: predict the risk.</b> Ward-level weekly dengue forecasts 2, 3 and 4 weeks ahead from rainfall, temperature and humidity lags.</p>
+    <p><b>Phase 2: plan the response.</b> Turn those forecasts into supply allocation, spraying-crew deployment, hospital overflow routing, a what-if simulator and dispatch notices, all running on one laptop without internet.</p>
+  </div>
+  <h3>How to use this guide</h3>
+  <ul>
+    <li>Section 1 is the 60-second summary to memorise.</li>
+    <li>Sections 3–10 explain each module: what it does, the exact method, why we chose it, and a worked example with real numbers from our app.</li>
+    <li>Section 12 lists the questions judges are most likely to ask, with short answers you can say out loud.</li>
+    <li>Section 13 lists honest limitations. <b>Say these before the judges find them.</b></li>
+  </ul>
+  <p class="muted">Every number in this guide was produced by the application or its tests on 27 Nov 2026. Forecasts are retrospective replays of the supplied dataset (ends 29 Dec 2025), not live surveillance.</p>
+  <h3>Contents</h3>
+  <ol class="toc">
+    <li>60-second summary</li><li>Requirement coverage (official rubric)</li><li>Architecture</li><li>Dataset and data checks</li>
+    <li>Forecasting model (Phase 1)</li><li>Resource allocation engine</li><li>Spraying crews and larvicide</li><li>Hospital overflow routing</li>
+    <li>Vector-control simulator</li><li>Dispatch notices and briefs</li><li>Map Hub, facilities and citizen reports</li>
+    <li>Likely judge questions and answers</li><li>Limitations and what is not done</li><li>Testing evidence</li><li>Seven-minute demo script</li><li>AI disclosure and team</li>
+  </ol>
+</section>
+
+<h2>1. 60-second summary</h2>
+<div class="say">
+  "Dengue cases follow rain by two to four weeks: rain creates breeding water, mosquitoes take 7–10 days to develop, the virus incubates in the mosquito and then in people. Our Phase 1 model uses exactly that delay to forecast every one of 60 wards two, three and four weeks ahead. On 2024–2025 data it never saw, its error is about one case per ward per week, roughly 40% better than assuming next week looks like this week.
+  In Phase 2 we turn the forecast into action. The supply engine converts predicted cases into saline, kits and beds using ratios we recovered exactly from the onsite data, then shares scarce stock by risk tier and population density, never exceeding stock. Spraying crews go where the model says they prevent the most cases. Overflow patients are routed only within the same city. The simulator shows the 2–4 week effect of crews, with the efficacy clearly marked as an assumption. Every number on screen, in the SMS, the WhatsApp text and the printable brief comes from the same computation, and the whole system runs on this laptop with the internet switched off."
+</div>
+<table>
+  <tr><th>Fact</th><th>Value</th></tr>
+  <tr><td>Data</td><td>31,320 ward-weeks · 60 wards · 5 city corporations · 522 weeks per ward · 4 Jan 2016 – 29 Dec 2025 · no missing values</td></tr>
+  <tr><td>Model</td><td>HistGradientBoostingRegressor, Poisson loss, one model per horizon; Ridge regression as comparator</td></tr>
+  <tr><td>Test MAE (2024–25, held out)</td><td>2 wk 1.037 · 3 wk 1.065 · 4 wk 1.279 cases/ward/week (last-week baseline 1.691 / 1.924 / 2.136)</td></tr>
+  <tr><td>Risk tiers</td><td>Training-period percentiles p50/p80/p95 = 0 / 5 / 13 cases: Low 0, Medium 1–5, High 6–13, Critical 14+</td></tr>
+  <tr><td>Supply ratios (from data)</td><td>Saline 2.385 · kits 1.164 · beds 0.298 per case, rounded half up — reproduces all 31,320 rows exactly</td></tr>
+  <tr><td>Stack</td><td>FastAPI + pandas + scikit-learn backend; React 18 + Vite frontend; no database server, no cloud AI, no external API at runtime</td></tr>
+  <tr><td>Tests</td><td>83 backend tests · 14 Phase 1 browser checks · 13 Round 2 browser checks with internet blocked — all passing</td></tr>
+</table>
+
+<h2>2. Requirement coverage (official Round 2 rubric)</h2>
+<table>
+  <tr><th style="width:21%">Rubric item (points)</th><th>What we built</th><th style="width:13%">Status</th></tr>
+  <tr><td>1. Constrained resource allocation (15)</td><td>Saline, kits, beds from forecast; stock sliders 30–100% (all or per resource); total crews; larvicide supply; risk × density priority; per-ward deficit alerts; never exceeds stock</td><td><span class="tag ok">Done, tested</span></td></tr>
+  <tr><td>2. Cross-ward overflow routing (10)</td><td>Same-city water-filling transfers, ward and city utilisation before/after, headroom, unmet demand; Hospital page + Map layer</td><td><span class="tag ok">Done, tested</span></td></tr>
+  <tr><td>3. Vector-control simulator (10)</td><td>Manual or optimised crew deployment; ML baseline vs scenario for weeks 2, 3, 4; Δcases, Δbeds, Δsaline, Δkits; ROI ranking (cases prevented per crew); next-best-crew list</td><td><span class="tag ok">Done, tested</span></td></tr>
+  <tr><td>4. Offline resilience (15)</td><td>All maths, maps, fonts, icons, photo local; one-click <code>start.cmd</code> installs nothing; connectivity indicator; online-only report submission disables itself</td><td><span class="tag part">Simulated offline passes; physical Wi-Fi-off test still to run</span></td></tr>
+  <tr><td>5. Repo, live URL, exports (10)</td><td>Exports: SMS, WhatsApp, printable HTML brief, 4 CSVs. ARCHITECTURE.md updated with AI disclosure</td><td><span class="tag part">Commits, live URL: team to do</span></td></tr>
+  <tr><td>6. Seven-minute uncut video (10)</td><td>Script in section 15</td><td><span class="tag no">To record</span></td></tr>
+  <tr><td>7. Technical Q&amp;A (30)</td><td>This guide</td><td>—</td></tr>
+  <tr><td>Bonus (up to +10)</td><td>Map Hub with real district borders; 2,420 local health facilities; citizen photo reports with officer review; larvicide limit; Bangla-first throughout; verified hotlines</td><td><span class="tag ok">Done</span></td></tr>
+</table>
+
+<h2>3. Architecture</h2>
+<div class="box"><code>Official XLSX → prepare_data.py → official.csv + supply.csv → common.py (validate, ward-grouped lag features) → train.py → forecaster.joblib</code><br>
+<code>forecaster.joblib (loaded once) → app.py (FastAPI, cached forecasts) → operations.py (pure maths) → phase2.py (plan, simulate, dispatch, brief, exports) + community.py (map data, facilities, reports) → React build served by the same process on 127.0.0.1:8000</code></div>
+<ul>
+  <li><b>One computation, many outputs.</b> <code>/api/plan</code> computes demand, allocation, crews and overflow once. The screen, SMS, WhatsApp text, printable brief and CSV all read that same result, so they can never disagree.</li>
+  <li><b>All maths in the backend, deterministic.</b> Same inputs always give the same output (a test checks this). The browser only displays.</li>
+  <li><b>No database server.</b> The dataset is 2.6 MB; pandas in memory is faster and has fewer offline failure points than MySQL. Citizen reports use SQLite from the Python standard library.</li>
+  <li><b>Caching.</b> Model loads once at startup; forecasts cached per (week, horizon); plan cached per input set; GET responses carry a 5-minute cache header; hashed build files cache forever, pages revalidate.</li>
+  <li><b>Startup safety.</b> The app refuses to start if the CSV's SHA-256 does not match the fingerprint stored in the model, so a wrong dataset cannot silently produce wrong forecasts.</li>
+</ul>
+
+<h2>4. Dataset and data checks</h2>
+<table>
+  <tr><th>Check</th><th>Result</th></tr>
+  <tr><td>Rows / wards / cities / weeks</td><td>31,320 / 60 / 5 (Dhaka North 20, Dhaka South 20, Chattogram 10, Gazipur 5, Narayanganj 5) / 522 per ward</td></tr>
+  <tr><td>Missing values, duplicates</td><td>None; ward-week pairs unique</td></tr>
+  <tr><td>Weekly continuity</td><td>Every ward has the same 522 weeks, exactly 7 days apart</td></tr>
+  <tr><td>Physical sanity</td><td>Humidity 0–100, rain ≥ 0, cases ≥ 0 integers, min ≤ avg ≤ max temperature, each ward in one city, ward traits constant</td></tr>
+  <tr><td>Phase 1 vs onsite file</td><td>Onsite file = Phase 1's 12 columns (identical: CSV SHA-256 9f15d4fd…, same as the Phase 1 model fingerprint) + 3 new columns</td></tr>
+  <tr><td>New columns</td><td><code>saline_bags_needed</code>, <code>diagnostic_kits_needed</code>, <code>hospital_beds_required</code>: each is an exact function of that week's <code>dengue_cases</code> (one value per case count)</td></tr>
+</table>
+<div class="box warnbox"><b>Leakage point to mention:</b> the three supply columns are computed from <i>actual</i> cases in the same week, so using them as model inputs would leak the answer. We never feed them to the model. We only used them to recover the per-case ratios, then apply those ratios to <i>predicted</i> cases.</div>
+<h3>How we found the ratios</h3>
+<p>We searched ratios r and rounding rules so that rule(r × cases) equals the column for all 31,320 rows. Round-half-up fits all three. Every ratio inside these intervals reproduces 100% of rows, and we use the mid-points: saline 2.3834–2.3863 → <b>2.385</b>, kits 1.1618–1.1666 → <b>1.164</b>, beds 0.2970–0.2995 → <b>0.298</b>. A test re-checks all rows every run.</p>
+
+<h2>5. Forecasting model (Phase 1, unchanged)</h2>
+<h3>Features (all computed per ward, only from weeks ≤ the issue week)</h3>
+<ul>
+  <li>Rainfall this week and 1–4 weeks before; 4- and 8-week rain totals</li>
+  <li>Temperature and humidity now and 4-week mean</li>
+  <li>Reported cases now and 1–3 weeks before, 4-week mean</li>
+  <li>Ward traits: population density, waterlogging risk index, sanitation score</li>
+  <li>Season: week-of-year as sine and cosine (so week 52 sits next to week 1)</li>
+</ul>
+<p><b>Why lags of 2–4 weeks:</b> rain creates standing water → Aedes egg to adult takes 7–10 days (CDC) → the virus incubates 8–12 days in the mosquito (WHO) → symptoms start 4–10 days after infection (WHO). So this week's rain shows up in reported cases roughly 2–4 weeks later. That is why the horizons are 2, 3 and 4 weeks.</p>
+<h3>Chronological split (by target date, so no future leaks into training)</h3>
+<table><tr><th>Set</th><th>Rule</th><th>Rows (2 / 3 / 4 wk)</th></tr>
+<tr><td>Train</td><td>target week ≤ 31 Dec 2022</td><td>21,360 / 21,300 / 21,240</td></tr>
+<tr><td>Validation</td><td>issue week in 2023, target ≤ 31 Dec 2023 — picks the model and fits uncertainty bands</td><td>3,000 / 2,940 / 2,880</td></tr>
+<tr><td>Test</td><td>issue week from 1 Jan 2024 — used once, after refitting on train + validation</td><td>6,180 / 6,120 / 6,060</td></tr></table>
+<h3>Results on the held-out 2024–2025 test set</h3>
+<table><tr><th>Horizon</th><th>MAE</th><th>RMSE</th><th>Last-week baseline MAE</th><th>Ward-mean baseline MAE</th><th>Tier exact</th><th>Tier within one</th><th>80% band coverage</th></tr>
+<tr><td>2 weeks</td><td>1.037</td><td>2.089</td><td>1.691</td><td>3.098</td><td>78.6%</td><td>99.6%</td><td>79.5%</td></tr>
+<tr><td>3 weeks</td><td>1.065</td><td>2.104</td><td>1.924</td><td>3.105</td><td>76.6%</td><td>99.7%</td><td>80.9%</td></tr>
+<tr><td>4 weeks</td><td>1.279</td><td>2.542</td><td>2.136</td><td>3.113</td><td>73.2%</td><td>99.5%</td><td>84.8%</td></tr></table>
+<p class="muted">Ridge regression validation MAE was 1.433 / 1.570 / 2.095, so gradient boosting won every horizon. Retraining in this session reproduced a byte-identical model file.</p>
+<h3>Why HistGradientBoosting with Poisson loss</h3>
+<ul>
+  <li>Cases are non-negative counts with monsoon spikes. Poisson loss models counts directly and never predicts negative cases.</li>
+  <li>Rain × season × ward interactions are non-linear (rain in January matters less than rain in July). Trees capture this; Ridge cannot.</li>
+  <li>Fast on 30k rows, handles missing values natively, no scaling needed. Ridge kept as a transparent comparator.</li>
+</ul>
+<h3>What drives the model (validation MAE increase when a feature group is shuffled)</h3>
+<table><tr><th>Group</th><th>2 wk</th><th>3 wk</th><th>4 wk</th></tr>
+<tr><td>Rain lags</td><td>1.534</td><td>1.516</td><td>0.508</td></tr><tr><td>Season</td><td>0.390</td><td>1.299</td><td>1.794</td></tr>
+<tr><td>Humidity</td><td>0.836</td><td>0.182</td><td>0.082</td></tr><tr><td>Vulnerability</td><td>0.336</td><td>0.369</td><td>0.289</td></tr>
+<tr><td>Temperature</td><td>0.169</td><td>0.513</td><td>0.118</td></tr><tr><td>Recent cases</td><td>0.027</td><td>0.038</td><td>0.032</td></tr></table>
+<p>Rain dominates at 2–3 weeks, season at 4 weeks. Recent cases matter very little — which is why our simulator does not work by "lowering recent cases" (see section 9).</p>
+<h3>Risk tiers</h3>
+<p>Cut-offs are the 50th, 80th and 95th percentiles of weekly ward cases in the <b>training period only</b> (0, 5, 13). Observed counts are integers, so a continuous prediction is compared at 0.5, 5.5 and 13.5 (continuity correction); a test proves every integer gets the same tier as an observed count would. Tiers are relative burden, not per-capita rates (the data has no ward populations).</p>
+<h3>Leakage protections (each has a test)</h3>
+<ul><li>Lags match manual per-ward slices, so no value crosses a ward boundary.</li>
+<li>Scrambling every observation after week t leaves all features at week t unchanged.</li>
+<li>Train, validation and test masks never overlap; split uses both issue and target dates.</li>
+<li>Tier cut-offs and uncertainty bands are fitted before the test set is touched.</li></ul>
+
+<h2>6. Resource allocation engine</h2>
+<p><b>Demand</b> per ward = round_half_up(predicted cases × ratio) for saline, kits and beds.<br>
+<b>Available stock</b> = slider % × total demand in scope (the dataset has no stock levels; officers can set each resource separately).<br>
+<b>Priority</b> = tier weight (Low 1, Medium 2, High 3, Critical 4) × (0.75 + 0.25 × density percentile). Any High ward (≥ 2.25) always outranks any Medium ward (≤ 2.0); within a tier, denser wards come first.</p>
+<h3>Algorithm</h3>
+<ol><li><b>Fairness floor:</b> every ward first gets 25% of its demand (adjustable 0–100%). If even the floors don't fit, they are shared proportionally (largest-remainder method, exact integers).</li>
+<li><b>Priority fill:</b> remaining units go to wards in priority order until each ward's demand is met or stock runs out.</li></ol>
+<p><b>Why this is defensible:</b> step 2 is the exact optimum of "maximise Σ priority × units delivered" subject to stock, demand caps and floors (a fractional knapsack with unit weights has an integral greedy optimum). Our tests compare it with an LP solver (SciPy HiGHS) on 15 random cases — identical objective every time. Guarantees, all tested: integers, 0 ≤ allocation ≤ demand, Σ allocation = min(stock, demand), floors respected, deterministic.</p>
+<p><b>Deficit alerts:</b> a ward is flagged when any resource is below 100%; <i>critical</i> if it gets under 50% or is High/Critical tier.</p>
+<div class="box"><b>Worked example</b> (issue week 4 Aug 2025, 2-week horizon, all cities, stock 50%): saline demand 969, stock 485, allocated 485, deficit 484; kits 469 / 235 / 235 / 234; beds 120 / 60 / 60 / 60. 43 wards flagged. Top priority ward: DSCC Ward 04 (High tier, highest density).</div>
+
+<h2>7. Spraying crews and larvicide</h2>
+<ul><li><b>Larvicide limit:</b> deployable crews = floor(total crews × larvicide supply %). One supply set per crew is an assumption. Example: 10 crews at 70% → 7 deploy, 3 idle.</li>
+<li><b>Assignment:</b> each next crew goes to the ward where it prevents the most predicted cases (ties → higher priority). Because each ward's response is concave (each extra crew adds less), this greedy is the exact optimum for the crew budget; a test checks it against brute force over all combinations.</li>
+<li>Maximum crews per ward (default 3) prevents piling every crew into one ward. Crews are never double-counted (Σ ≤ deployable).</li>
+<li>The plan flags High/Critical wards that got no crew.</li></ul>
+
+<h2>8. Hospital overflow routing</h2>
+<p><b>Bed demand</b> per ward = round_half_up(0.298 × predicted cases). <b>Capacity is not in the dataset</b>, so the default is each ward's 90th-percentile weekly bed requirement in 2016–2022 (minimum 1), times a capacity-scale slider. This is labelled as an assumption everywhere.</p>
+<p><b>Routing (per city only):</b> patients treated locally = min(demand, capacity); excess = demand − capacity. Each excess patient goes, one at a time, to the ward in the <i>same city</i> whose utilisation after receiving them would be lowest (water-filling). This levels load, moves the maximum possible number (min(total excess, total headroom)), and never counts a bed twice. Whatever cannot be placed is reported as unmet.</p>
+<div class="box"><b>Worked example</b> (issue week 30 Jun 2025, 2-week horizon, default capacity): Chattogram CCC Ward 07 → Ward 04: 1 patient; Dhaka North DNCC Ward 12 → Ward 16: 1; Dhaka South DSCC Ward 04 → Ward 03: 1. No unmet demand. With capacity scale 0.85 and 4 Aug 2025, 3-week horizon: 7 patients routed across 4 cities, 3 unmet.</div>
+<p class="muted">City-wide utilisation does not change with routing (the patients stay in the city); ward-level utilisation does. Routing is a planning recommendation, not a transfer order: there are no hospital names, distances or travel times in the data.</p>
+
+<h2>9. Vector-control simulator</h2>
+<p><b>Baseline</b> = the ML forecast for weeks 2, 3 and 4 for each ward.<br>
+<b>Scenario</b> = baseline × (1 − reduction(k) × onset(h)), with reduction(k) = min(cap, 1 − (1 − p)<sup>k</sup>) for k crews, p = assumed transmission cut per crew (default 10%), cap default 50%; onset = 50% / 85% / 100% at 2 / 3 / 4 weeks.<br>
+<b>Outputs</b>: cases prevented per horizon, bed and saline savings (via the same ratios), ROI = cases prevented (weeks 2–4) ÷ crews; zero crews → ROI not defined (shown as —, never ∞).</p>
+<h3>Why not feed reduced inputs into the ML model?</h3>
+<p>We tested it. Lowering the recent-case features changed city totals by under 1% (the model barely uses them). Lowering rain features gave non-monotone results in up to a third of steps (tree models extrapolate in steps). A forecasting model learns correlations, not the causal effect of spraying. So we keep the ML model as the baseline and apply an explicit, adjustable effect — which a judge can inspect and change on screen.</p>
+<p><b>Why the onset shape:</b> spraying works on mosquitoes now; infections already incubating still appear. Using CDC/WHO timings (egg→adult 7–10 days, mosquito incubation 8–12 days, human 4–10 days), averted infections show up mainly 2–4 weeks later.</p>
+<div class="box"><b>Worked example</b> (4 Aug 2025, 12 crews, defaults): baseline 407.1 / 528.4 / 497.4 cases at weeks 2 / 3 / 4 → 401.0 / 515.8 / 483.8. Prevented 6.14 + 12.66 + 13.59 = 32.38 cases; beds 159 → 153 at week 3; saline 1,263 → 1,233. ROI 2.70 cases per crew. Best wards: DSCC Ward 04 (2.87), CCC Ward 01 (2.81), DNCC Ward 12 (2.79).</div>
+<div class="box warnbox"><b>Say clearly:</b> "The efficacy is an assumption, not a measured effect. The dataset has no intervention records, so no one can measure it from this data. We expose it as a slider so planners can test pessimistic and optimistic cases. The ranking — which wards benefit most — depends mainly on the forecast, so it is fairly robust to the exact efficacy value."</div>
+
+<h2>10. Dispatch notices and briefs</h2>
+<ul><li><b>SMS</b> (English, ≤160 characters; measured maximum 152 over a range of scenarios) and Bangla SMS (with segment count): ward, issue date, target week, predicted cases, tier, allocated/required saline, kits, beds, crews, deficits.</li>
+<li><b>WhatsApp</b> (English and Bangla): the same plus the 80% range, priority rank and a "planning guidance, not a clinical order" note.</li>
+<li><b>Commissioner brief:</b> printable HTML with print stylesheet (Print / Save as PDF): supplies, alerts, ward allocation in priority order, overflow and transfers, simulation and ROI table, all assumptions.</li>
+<li><b>CSV exports:</b> allocation, overflow, simulation, all messages.</li>
+<li>Nothing is sent. Templates are copied into an approved gateway. Copy buttons work offline.</li></ul>
+
+<h2>11. Map Hub, facilities and citizen reports</h2>
+<ul><li><b>Map:</b> real district outlines (geoBoundaries, Bangladesh Bureau of Statistics / OCHA, CC BY 3.0 IGO) and real city-corporation centres; the team's WardMap tiles show every ward's tier and predicted cases. <b>Ward boundaries do not exist in the data, so wards are a schematic grid</b> and labelled as such.</li>
+<li><b>Layers:</b> district borders, supply shortage, spraying crews, bed transfers, nearby healthcare — each says who it is for.</li>
+<li><b>Nearby healthcare:</b> 2,420 hospitals, clinics and pharmacies within 7 km of each city centre from OpenStreetMap (ODbL), saved locally. Phone shown only where OSM has one (127 do). No capacity data. Map links hidden when offline.</li>
+<li><b>Citizen reports:</b> standing water, open garbage, broken sewer; ward; optional GPS and photo. No name or phone collected. Photo is re-encoded in the browser (removes GPS metadata), then checked on the server by its actual bytes (only JPEG/PNG, ≤1.5 MB), stored under a random file name. Duplicate taps are stored once (client request ID). Submit button disables when the service can't be reached. Officers can mark reports reviewed or resolved.</li>
+<li><b>Hotlines:</b> 999 (National Emergency Service, listed on bangladesh.gov.bd) and 16263 (Shastho Batayon, listed on 16263.dghs.gov.bd and dghs.gov.bd), pinned at the bottom of every page with tap-to-call.</li></ul>
+
+<h2 class="pb">12. Likely judge questions and answers</h2>
+<div class="qa"><p class="q">Q1. Why 2, 3 and 4 weeks?</p><p class="a">Rain → breeding (7–10 days) → mosquito incubation (8–12 days) → human symptoms (4–10 days) puts the rain-to-case delay at about 2–4 weeks. Shorter is too late to act; longer loses accuracy (MAE rises from 1.04 to 1.28 already).</p></div>
+<div class="qa"><p class="q">Q2. How do you know there is no data leakage?</p><p class="a">Features use only weeks ≤ issue week within the same ward (tested by scrambling the future); split is by target date so training targets never enter validation; thresholds and bands are fitted before the test set; the three supply columns, which come from actual cases, are never model inputs.</p></div>
+<div class="qa"><p class="q">Q3. Why Poisson loss?</p><p class="a">Target is a count. Poisson loss fits the log of the expected count, so predictions are always ≥ 0 and the variance grows with the mean, as it does in outbreak weeks. Squared error over-weights rare spikes.</p></div>
+<div class="qa"><p class="q">Q4. MAE 1.04 — is that good?</p><p class="a">It is about one case per ward per week on 2024–25 data the model never saw. The naive "same as last week" baseline is 1.69, so we are about 39% better; the ward-average baseline is 3.10. RMSE 2.09 is higher because big outbreak weeks are harder.</p></div>
+<div class="qa"><p class="q">Q5. Why not deep learning / LSTM?</p><p class="a">30k rows, tabular, need for explanation and offline CPU inference. Gradient boosting is the standard strong choice here; it trains in seconds and we can show which feature groups drive it.</p></div>
+<div class="qa"><p class="q">Q6. How were the risk thresholds chosen?</p><p class="a">Training-period percentiles (50th, 80th, 95th) of weekly ward cases: 0, 5, 13. Data-driven, fixed before testing, and the same for every ward so tiers are comparable.</p></div>
+<div class="qa"><p class="q">Q7. Where do saline/kit/bed numbers come from? Did you invent them?</p><p class="a">No. The onsite file contains them, and they are exact functions of cases. We recovered the ratios (2.385, 1.164, 0.298, round half up) and a test confirms they reproduce all 31,320 rows. We apply them to <i>predicted</i> cases.</p></div>
+<div class="qa"><p class="q">Q8. Is the allocation optimal?</p><p class="a">For the stated objective — maximise priority-weighted units delivered, after a fairness floor, within stock and demand — yes: it is a fractional knapsack with unit weights, and our tests match an LP solver exactly. We don't claim it is optimal for health outcomes, which the data cannot measure.</p></div>
+<div class="qa"><p class="q">Q9. Why not give everything to the highest-risk wards?</p><p class="a">That starves lower-tier wards completely. The 25% floor (adjustable, can be set to 0) keeps a minimum service everywhere; the rest follows risk. Officers can see the effect live.</p></div>
+<div class="qa"><p class="q">Q10. Why does density matter?</p><p class="a">Aedes transmission spreads faster where people live close together. But density only orders wards inside the same risk tier; it can never push a Medium ward above a High one.</p></div>
+<div class="qa"><p class="q">Q11. Can allocation ever exceed stock?</p><p class="a">No. Σ allocation = min(stock, demand), each ward ≤ its demand, integers only. Tests check this at 30, 45, 70, 99 and 100% stock and on random cases.</p></div>
+<div class="qa"><p class="q">Q12. Where does bed capacity come from?</p><p class="a">The data has none. We use each ward's 2016–22 90th-percentile weekly bed need as a placeholder, clearly labelled, with a slider. It must be replaced with real hospital capacity before real use.</p></div>
+<div class="qa"><p class="q">Q13. Why only within the same city?</p><p class="a">The brief requires it, and city corporations run their own health services. Our code builds a separate pool per city; a test asserts every transfer has the same city at both ends.</p></div>
+<div class="qa"><p class="q">Q14. How do you avoid double-counting beds?</p><p class="a">Local patients fill local beds first; each transferred patient is placed only into a bed still free after local patients and earlier transfers; total moved = min(total excess, total headroom). Tests check conservation (out = in) and that no ward exceeds capacity.</p></div>
+<div class="qa"><p class="q">Q15. The simulator — is "cases prevented" real?</p><p class="a">It is a scenario estimate. The forecast is real model output; the spraying effect is an assumption shown on screen and changeable. We tested putting reduced inputs into the model and it was not reliable, so we did not pretend it was causal.</p></div>
+<div class="qa"><p class="q">Q16. What does ROI mean here?</p><p class="a">Estimated cases prevented over weeks 2–4 divided by crews sent to that ward. Example: 12 crews → 32.4 cases prevented → 2.70 per crew. Zero crews → not defined, never divided by zero.</p></div>
+<div class="qa"><p class="q">Q17. Why does each extra crew help less?</p><p class="a">Reduction = 1 − (1 − p)<sup>k</sup>: the second crew works on the mosquitoes the first one missed. This concave shape also makes greedy crew assignment provably optimal.</p></div>
+<div class="qa"><p class="q">Q18. What happens offline?</p><p class="a">Everything core: forecasts, allocation, routing, simulation, dispatch, maps, facility list, fonts, photo. Only citizen report submission requires the service; it disables with a message. Our browser test blocks all non-local traffic and passes 13 checks; start.cmd downloads nothing.</p></div>
+<div class="qa"><p class="q">Q19. Do you use ChatGPT / an LLM at runtime?</p><p class="a">No. No LLM, no paid API, no external call for any calculation. AI (Claude Code) was used to help write code and docs; it is disclosed in the README.</p></div>
+<div class="qa"><p class="q">Q20. Is the map real?</p><p class="a">District borders and city centres are real (geoBoundaries / BBS). Ward boundaries are not in the data, so we show wards as a labelled grid instead of inventing shapes.</p></div>
+<div class="qa"><p class="q">Q21. Are the facility phone numbers real?</p><p class="a">They come from OpenStreetMap volunteers, shown only where recorded (127 of 2,420), labelled unverified. We invented none.</p></div>
+<div class="qa"><p class="q">Q22. How are uploaded photos made safe?</p><p class="a">Browser re-encodes the image (strips GPS/EXIF); server checks the real file signature (JPEG/PNG only, ≤1.5 MB), ignores the claimed type and filename, saves under a random ID, serves with nosniff; path traversal is blocked (tested). No personal data is collected.</p></div>
+<div class="qa"><p class="q">Q23. Who can see reports?</p><p class="a">In this demo there is no login, so the officer list is open — this must get authentication before real use. We say this on screen.</p></div>
+<div class="qa"><p class="q">Q24. Are these live 2026 forecasts?</p><p class="a">No. Data ends 29 Dec 2025. Every screen says forecasts are retrospective replays and marks whether a week was in the training period or the held-out test period.</p></div>
+<div class="qa"><p class="q">Q25. How do you know the system works on another computer?</p><p class="a">setup.cmd builds everything from the workbook and runs the tests; retraining reproduces a byte-identical model (same SHA-256), and the app refuses to start if the dataset fingerprint differs.</p></div>
+<div class="qa"><p class="q">Q26. Why should the SMS and the brief match the screen?</p><p class="a">They are not separate calculations: all are rendered from the same cached plan result for the same inputs. A test checks that a ward's SMS numbers equal its allocation.</p></div>
+<div class="qa"><p class="q">Q27. Why Bangla first?</p><p class="a">The audience is ward commissioners, health workers and citizens in Bangladesh. Bangla is default; English is one tap and keeps all selections. All dictionaries are local.</p></div>
+<div class="qa"><p class="q">Q28. What would you do with more time?</p><p class="a">Real hospital capacity and stock feeds; field-measured spraying efficacy to calibrate the simulator; verified ward boundaries; login and roles for report review; real user testing with low-literacy citizens.</p></div>
+
+<h2>13. Limitations and what is not done — say these first</h2>
+<table><tr><th>Item</th><th>Status / honest answer</th></tr>
+<tr><td>Bed capacity, stock levels, spraying efficacy, distances</td><td>Not in data → labelled, adjustable assumptions</td></tr>
+<tr><td>Ward boundaries</td><td>Not in data → schematic grid; district borders real</td></tr>
+<tr><td>Live surveillance</td><td>Retrospective replay only (data to 29 Dec 2025)</td></tr>
+<tr><td>Physical offline test (Wi-Fi off, restart, recalculate)</td><td>Simulated offline passes; physical test still to be run and filmed</td></tr>
+<tr><td>Report review access</td><td>No login in demo; required before real use</td></tr>
+<tr><td>Low-literacy usability</td><td>Designed for it, not yet tested with real users</td></tr>
+<tr><td>"Breeding site" report type and GPS-sorted facilities</td><td>Backend ready; the buttons are not on screen yet</td></tr>
+<tr><td>Impeccable full-page design scan</td><td>Timed out; file scan done (1 false positive)</td></tr>
+<tr><td>Git commits, live URL, video</td><td>Team to do (commits from each member's own computer)</td></tr></table>
+
+<h2>14. Testing evidence (run 27 Nov 2026)</h2>
+<table><tr><th>Suite</th><th>What it covers</th><th>Result</th></tr>
+<tr><td>Backend pytest</td><td>31 Phase 1 (data, leakage, tiers, API) + 52 Round 2 (ratios on all rows, LP-checked allocation, brute-force crews, overflow conservation, simulator bounds, dispatch, exports, report validation and security)</td><td>83 passed</td></tr>
+<tr><td>Phase 1 browser test</td><td>Public, Officer, Hospital, Model views; language switch; hotlines; mobile 375 px; no console errors</td><td>14 passed</td></tr>
+<tr><td>Round 2 browser test</td><td>All non-local traffic blocked: forecast, map, slider-driven allocation, simulator, SMS, brief, hospital, report, service-down gating, 360 px layout and touch targets</td><td>13 passed</td></tr>
+<tr><td>start.cmd</td><td>Starts without installing anything; health check OK, 31,320 rows</td><td>OK</td></tr></table>
+<p class="muted">Bugs found by these tests and fixed: dense Medium ward outranking sparse High ward; leaky test kill switch; missing page heading; 501 px overflow on phones; sub-40 px touch targets; stale cached page after rebuild.</p>
+
+<h2>15. Seven-minute demo script (uncut, no slides)</h2>
+<table><tr><th style="width:12%">Time</th><th style="width:22%">Screen</th><th>Say / do</th></tr>
+<tr><td>0:00–0:40</td><td>Public home</td><td>Problem: response starts after hospitals fill. Show headline, hotlines bar. "Phase 1 predicts, Phase 2 plans."</td></tr>
+<tr><td>0:40–1:30</td><td>Public forecast → Model page</td><td>Select Dhaka North Ward 01, week 4 Aug 2025, 2 weeks: 9.7 cases, range 6.5–17.4, High. Rain 3 weeks before: 54.6 mm. Model page: MAE 1.04 vs 1.69 baseline, held-out 2024–25.</td></tr>
+<tr><td>1:30–2:15</td><td>Map</td><td>All cities → Dhaka North; ward tiles by tier; tick Supply shortage, Spraying crews; say borders real, wards schematic.</td></tr>
+<tr><td>2:15–3:25</td><td>Officer → Supplies &amp; crews</td><td>Stock 100% → no deficits; drag to 30% → deficits and critical alerts appear live; explain priority and "never exceeds stock". Larvicide 70% → crews drop.</td></tr>
+<tr><td>3:25–4:25</td><td>Hospital</td><td>Week 30 Jun 2025: transfers CCC 07→04, DNCC 12→16, DSCC 04→03; lower capacity scale to 0.85 to show unmet demand; same-city only.</td></tr>
+<tr><td>4:25–5:25</td><td>Officer → Spray simulator</td><td>Weeks 2–4 baseline vs crews; 32 cases prevented, 2.70 per crew; ROI ranking; add a crew manually; say efficacy is an assumption.</td></tr>
+<tr><td>5:25–6:00</td><td>Dispatch → brief; Report</td><td>Copy SMS; open commissioner brief, Print preview; submit a citizen report.</td></tr>
+<tr><td>6:00–6:40</td><td>Wi-Fi off</td><td>Turn Wi-Fi off on camera; stop.cmd, start.cmd; change stock slider, run simulator — fresh numbers; report button disabled with message.</td></tr>
+<tr><td>6:40–7:00</td><td>Home</td><td>Recap: real ML, exact supply ratios, constrained allocation, same-city routing, honest simulator, offline.</td></tr></table>
+
+<h2>16. AI disclosure and team</h2>
+<ul><li><b>M (Hack M):</b> backend, ML, operational algorithms. <b>F (Hack F):</b> frontend, GIS (WardMap), UI/UX. <b>S (Hack S):</b> dataset, integration, documentation, QA.</li>
+<li>Claude Code (Anthropic) helped write and test code and documentation under the team's direction; OpenAI Codex helped with Phase 1 documentation (per the Phase 1 README). No AI runs inside the application.</li>
+<li>Photo: Aedes aegypti, James Gathany / CDC (public domain). Borders: geoBoundaries (CC BY 3.0 IGO). Facilities: © OpenStreetMap contributors (ODbL). Fonts: Inter, Noto Sans Bengali (SIL OFL). Icons: Lucide (ISC).</li></ul>
+
+</body>
+</html>

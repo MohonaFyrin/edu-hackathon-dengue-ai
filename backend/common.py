@@ -13,6 +13,8 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
 DATA_CSV = ROOT / "data" / "official.csv"
+SUPPLY_CSV = ROOT / "data" / "supply.csv"
+SUPPLY_COLUMNS = ["saline_bags_needed", "diagnostic_kits_needed", "hospital_beds_required"]
 MODEL_PATH = ROOT / "models" / "forecaster.joblib"
 REPORTS = ROOT / "reports"
 
