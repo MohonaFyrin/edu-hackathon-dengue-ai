@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BookOpen, Droplets, Hospital as HospitalIcon, Map as MapIcon, Megaphone, Shirt, ShieldCheck, Siren, Stethoscope, TriangleAlert } from "lucide-react";
 import { api } from "./api.js";
 import {
   ActionPanel, Card, CaseChart, Filters, HotlineStrip, Loading, ModeNote, TierBadge, TierLegend, Weather, addWeeks, useAsync,
@@ -6,15 +7,20 @@ import {
 import {
   TIERS, bn, cityLabel, driverName, edu, fmtDate, modelName, tierName, tierPublic, tierRanges, tx, wardFull, wardLabel, weekOf,
 } from "./i18n.js";
+import { AllocationPanel, DispatchPanel, OverflowPanel, SimulatorPanel, SupplyControls, usePlan } from "./ops.jsx";
+import { ReportsReview } from "./Report.jsx";
 
 const bars = (items) => items.map((i) => ({ h: i.horizon_weeks, value: i.predicted_cases, lower: i.lower_cases, upper: i.upper_cases, actual: i.observed_cases }));
 const range = (f) => `${bn(f.lower_cases, 1)}–${bn(f.upper_cases, 1)}`;
 const casesWord = () => tx("জন", "cases");
 
+const EDU_ICON = { what: BookOpen, prevent: Droplets, signs: TriangleAlert, doctor: Stethoscope };
+
 function EduBlock({ k }) {
   const e = edu()[k];
+  const Icon = EDU_ICON[k];
   return (
-    <Card title={e.title} id={`edu-${k}`} className={`edu edu-${k}`}>
+    <Card title={<><Icon size={22} aria-hidden="true" /> {e.title}</>} id={`edu-${k}`} className={`edu edu-${k}`}>
       {e.lead && <p className="muted">{e.lead}</p>}
       <ul>{e.items.map((t) => <li key={t}>{t}</li>)}</ul>
     </Card>
@@ -53,10 +59,24 @@ export function PublicView({ meta, sel, set }) {
   const e = edu();
   return (
     <>
-      <Card title={tx("এই সাইট কী দেখায়?", "What this site shows")} id="about" className="intro">
-        <p>{tx("বৃষ্টি, তাপমাত্রা ও আর্দ্রতার অতীত তথ্য থেকে ওয়ার্ডভিত্তিক সাপ্তাহিক ডেঙ্গু রোগীর সম্ভাব্য সংখ্যা ও ঝুঁকির স্তর দেখানো হয়। এটি রোগ নির্ণয় নয়।",
-          "Estimated weekly dengue cases and a risk tier per ward, based on past rainfall, temperature and humidity. It is not a diagnosis.")}</p>
-      </Card>
+      <section className="hero" aria-labelledby="hero-h">
+        <div className="hero-text">
+          <h2 id="hero-h">{tx("আগেই জানুন ডেঙ্গুর ঝুঁকি। সুরক্ষিত রাখুন প্রিয়জনকে।", "Know dengue risk early. Keep your family safe.")}</h2>
+          <p>{tx("বৃষ্টি, তাপমাত্রা ও আর্দ্রতার তথ্য থেকে আপনার ওয়ার্ডে ২ থেকে ৪ সপ্তাহ পরের সম্ভাব্য রোগী। এটি রোগ নির্ণয় নয়।",
+            "Expected dengue cases in your ward 2 to 4 weeks ahead, from rain, temperature and humidity. It is not a diagnosis.")}</p>
+          <nav className="quick" aria-label={tx("দ্রুত যান", "Go to")}>
+            <a className="btn primary" href="#result" onClick={(ev) => { ev.preventDefault(); document.getElementById("result")?.scrollIntoView(); }}><ShieldCheck size={20} aria-hidden="true" /> {tx("আমার ওয়ার্ড", "My ward")}</a>
+            <a className="btn" href="#map"><MapIcon size={20} aria-hidden="true" /> {tx("মানচিত্র", "Map")}</a>
+            <a className="btn" href="#report"><Megaphone size={20} aria-hidden="true" /> {tx("অভিযোগ", "Report")}</a>
+            <a className="btn" href="#learn" onClick={(ev) => { ev.preventDefault(); document.getElementById("learn")?.scrollIntoView(); }}><BookOpen size={20} aria-hidden="true" /> {tx("জানুন", "Learn")}</a>
+          </nav>
+        </div>
+        <figure className="hero-photo">
+          <img src="/assets/aedes-aegypti-cdc-gathany.jpg" width="700" height="470"
+            alt={tx("মানুষের ত্বকে রক্ত খাচ্ছে একটি এডিস ইজিপ্টাই মশা; গায়ে সাদা ডোরা।", "An Aedes aegypti mosquito, with white stripes, feeding on human skin.")} />
+          <figcaption>{tx("এডিস মশা দিনে কামড়ায়। ছবি: James Gathany, CDC", "Aedes mosquitoes bite by day. Photo: James Gathany, CDC")}</figcaption>
+        </figure>
+      </section>
       <Filters sel={sel} set={set} meta={meta} role="public">
         <ActionPanel role="public" h={sel.h} tier={fc.data?.risk_tier} />
       </Filters>
@@ -70,7 +90,7 @@ export function PublicView({ meta, sel, set }) {
         </Card>
       )}</Loading>
       <Card title={tx("ওয়ার্ডভিত্তিক ঝুঁকি", "Risk by ward")} id="grid">
-        <p className="muted">{cityLabel(sel.city)} · {all.data ? weekOf(all.data.target_date) : ""}. {tx("ওয়ার্ডে ক্লিক করুন। (ওয়ার্ড-সীমানার তথ্য নেই, তাই মানচিত্রের বদলে ছক।)", "Select a ward. (No ward boundaries in the data, so a grid replaces a map.)")}</p>
+        <p className="muted">{all.data ? weekOf(all.data.target_date) : ""}. {tx("ওয়ার্ডে চাপ দিন। ওয়ার্ডের সীমানার তথ্য নেই, তাই ছক দেখানো হলো।", "Tap a ward. There are no ward boundaries in the data, so wards are shown as a grid.")}</p>
         <label className="search"><span>{tx("ওয়ার্ড খুঁজুন", "Find a ward")}</span>
           <input type="search" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder={tx("যেমন: ০৫", "e.g. 05")} />
         </label>
@@ -93,8 +113,17 @@ export function PublicView({ meta, sel, set }) {
           <Loading r={fc}>{(f) => <CaseChart history={h.weeks} forecasts={bars([f])} title={`${wardLabel(sel.ward)}: ${tx("সাপ্তাহিক রোগী", "weekly cases")}`} />}</Loading>
         )}</Loading>
       </Card>
-      <div className="two">{["what", "prevent", "signs", "doctor"].map((k) => <EduBlock key={k} k={k} />)}</div>
-      <HotlineStrip />
+      <section id="learn" className="learn" aria-label={tx("ডেঙ্গু সম্পর্কে জানুন", "Learn about dengue")}>
+        <ul className="picto" aria-label={tx("প্রতিদিন যা করবেন", "Every day")}>
+          <li><Droplets size={36} aria-hidden="true" /><span>{tx("জমা পানি ফেলুন", "Empty standing water")}</span></li>
+          <li><ShieldCheck size={36} aria-hidden="true" /><span>{tx("মশারি ব্যবহার করুন", "Sleep under a net")}</span></li>
+          <li><Shirt size={36} aria-hidden="true" /><span>{tx("লম্বা হাতা জামা", "Wear long sleeves")}</span></li>
+          <li><HospitalIcon size={36} aria-hidden="true" /><span>{tx("জ্বর হলে ডাক্তার", "Fever? See a doctor")}</span></li>
+        </ul>
+        <div className="two">{["what", "prevent", "signs", "doctor"].map((k) => <EduBlock key={k} k={k} />)}</div>
+        <HotlineStrip />
+        <p className="emerg"><Siren size={22} aria-hidden="true" /> {tx("বিপদচিহ্ন দেখা দিলে এখনই ৯৯৯ বা ১৬২৬৩ নম্বরে ফোন করুন, অথবা কাছের হাসপাতালে যান।", "If a danger sign appears, call 999 or 16263 now, or go to the nearest hospital.")}</p>
+      </section>
       <p className="muted small">{e.sources.map(([t, u], i) => <span key={u}>{i ? " · " : ""}<a href={u} target="_blank" rel="noreferrer">{t}</a></span>)}</p>
     </>
   );
@@ -145,7 +174,73 @@ function planningText(f) {
     `Rain over the last 4 weeks is ${rain}. Estimate for ${weekOf(f.target_date)}: about ${bn(f.predicted_cases, 1)} cases (${tierName(f.risk_tier)}). Compare with field information.`);
 }
 
-export function OfficerView({ meta, sel, set }) {
+const OFFICER_TABS = [
+  ["forecast", "পূর্বাভাস ও অগ্রাধিকার", "Forecast & priority"],
+  ["supply", "সামগ্রী ও দল বরাদ্দ", "Supplies & crews"],
+  ["sim", "মশা নিধন সিমুলেটর", "Spray simulator"],
+  ["dispatch", "বার্তা ও ব্রিফ", "Dispatch & briefs"],
+  ["reports", "নাগরিক অভিযোগ", "Citizen reports"],
+];
+
+/** One line of the facts an officer needs before choosing a task. */
+function OfficerOverview({ sel, ops }) {
+  const plan = usePlan(sel, ops, sel.city);
+  const p = plan.data;
+  if (!p) return null;
+  const short = Object.values(p.resources).filter((v) => v.deficit > 0).length;
+  return (
+    <ul className="overview" aria-label={tx("সারসংক্ষেপ", "Overview")} aria-live="polite">
+      <li><strong>{bn(p.wards.filter((w) => w.risk_tier === "High" || w.risk_tier === "Critical").length)}</strong> {tx("উচ্চ ঝুঁকির ওয়ার্ড", "high-risk wards")}</li>
+      <li className={p.alerts.length ? "bad" : ""}><strong>{bn(p.alerts.length)}</strong> {tx("ওয়ার্ডে সামগ্রীর ঘাটতি", "wards short of supplies")}{short ? ` (${bn(short)} ${tx("ধরন", "types")})` : ""}</li>
+      <li className={p.crews.deficit ? "bad" : ""}><strong>{bn(p.crews.assigned)}/{bn(p.crews.total_available)}</strong> {tx("দল কাজে", "crews deployed")}</li>
+      <li className={p.overflow.unmet_after ? "bad" : ""}><strong>{bn(p.overflow.unmet_after)}</strong> {tx("রোগীর বেড নেই", "patients without a bed")}</li>
+    </ul>
+  );
+}
+
+function SupplyTab({ sel, ops, setOps }) {
+  const plan = usePlan(sel, ops, sel.city);
+  return (
+    <>
+      <SupplyControls ops={ops} setOps={setOps} />
+      <Loading r={plan}>{(p) => <AllocationPanel p={p} />}</Loading>
+    </>
+  );
+}
+
+export function OfficerView({ meta, sel, set, ops, setOps }) {
+  const [tab, setTab] = useState("forecast");
+  return (
+    <>
+      <Filters sel={sel} set={set} meta={meta} role="officer" allCities>
+        {tab === "forecast" && <OfficerActions sel={sel} />}
+      </Filters>
+      <OfficerOverview sel={sel} ops={ops} />
+      <nav className="subtabs" aria-label={tx("কর্মকর্তার কাজ", "Officer tasks")}>
+        {OFFICER_TABS.map(([k, b, e]) => (
+          <button key={k} className={tab === k ? "on" : ""} aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>{tx(b, e)}</button>
+        ))}
+      </nav>
+      {tab === "forecast" && <OfficerForecast meta={meta} sel={sel} set={set} />}
+      {tab === "supply" && <SupplyTab sel={sel} ops={ops} setOps={setOps} />}
+      {tab === "sim" && <SimulatorPanel sel={sel} ops={ops} setOps={setOps} city={sel.city} meta={meta} />}
+      {tab === "dispatch" && (
+        <>
+          <SupplyControls ops={ops} setOps={setOps} />
+          <DispatchPanel sel={sel} ops={ops} city={sel.city} />
+        </>
+      )}
+      {tab === "reports" && <ReportsReview city={sel.city} />}
+    </>
+  );
+}
+
+function OfficerActions({ sel }) {
+  const pr = useAsync(() => api("priority", { issue_date: sel.issue, horizon_weeks: sel.h, city: sel.city, limit: 10 }), [sel.city, sel.issue, sel.h]);
+  return <ActionPanel role="officer" h={sel.h} tier={pr.data?.wards?.[0]?.risk_tier} />;
+}
+
+function OfficerForecast({ meta, sel, set }) {
   const pr = useAsync(() => api("priority", { issue_date: sel.issue, horizon_weeks: sel.h, city: sel.city, limit: 10 }), [sel.city, sel.issue, sel.h]);
   const fc = useAsync(() => api("forecast", { ward_id: sel.ward, issue_date: sel.issue, horizon_weeks: sel.h }), [sel.ward, sel.issue, sel.h]);
   const hist = useAsync(() => api("history", { issue_date: sel.issue, ward_id: sel.ward, weeks: 52 }), [sel.ward, sel.issue]);
@@ -154,9 +249,6 @@ export function OfficerView({ meta, sel, set }) {
   const flagged = top ? top.filter((w) => w.risk_tier === "High" || w.risk_tier === "Critical").length : 0;
   return (
     <>
-      <Filters sel={sel} set={set} meta={meta} role="officer" allCities>
-        <ActionPanel role="officer" h={sel.h} tier={top?.[0]?.risk_tier} />
-      </Filters>
       <Card title={tx("পর্যালোচনার জন্য অগ্রাধিকার ওয়ার্ড (শীর্ষ ১০)", "Priority wards for review (top 10)")} id="top10">
         <p className="muted">{sel.city ? cityLabel(sel.city) : tx("সব শহর", "All cities")} · {weekOf(addWeeks(sel.issue, sel.h))}. {tx("পর্যালোচনার সহায়ক তালিকা, স্বয়ংক্রিয় নির্দেশ নয়।", "A review aid, not an automatic instruction.")}</p>
         {top && (
@@ -210,7 +302,29 @@ export function OfficerView({ meta, sel, set }) {
 }
 
 /* ------------------------------ Hospital ------------------------------ */
-export function HospitalView({ meta, sel, set }) {
+function HospitalBeds({ sel, ops, setOps }) {
+  // Overflow is computed for every city pool; the selected city is shown in detail.
+  const plan = usePlan(sel, ops, null);
+  const cityPlan = usePlan(sel, ops, sel.city);
+  const NAME = { saline_bags_needed: ["স্যালাইন ব্যাগ", "Saline bags"], diagnostic_kits_needed: ["টেস্ট কিট", "Diagnostic kits"], hospital_beds_required: ["হাসপাতাল বেড", "Hospital beds"] };
+  return (
+    <>
+      <Loading r={cityPlan}>{(p) => (
+        <Card title={`${cityLabel(sel.city)}: ${tx("প্রয়োজনীয় সামগ্রী", "supplies needed")}`} id="hsupply">
+          <p className="muted small">{weekOf(p.target_date)} · {tx("প্রয়োজন = অনুমানিত রোগী × ডেটাসেটের অনুপাত; বরাদ্দ = মজুত অনুযায়ী (কর্মকর্তা পাতায় বদলানো যায়)।", "Needed = estimated cases × dataset ratios; allocated = by stock level (set on the Officer page).")}</p>
+          <div className="tablewrap"><table>
+            <thead><tr><th>{tx("সামগ্রী", "Supply")}</th><th>{tx("প্রয়োজন", "Needed")}</th><th>{tx("বরাদ্দ", "Allocated")}</th><th>{tx("ঘাটতি", "Shortfall")}</th></tr></thead>
+            <tbody>{Object.entries(p.resources).map(([k, v]) => (
+              <tr key={k}><td>{tx(...NAME[k])}</td><td>{bn(v.demand)}</td><td>{bn(v.allocated)}</td><td className={v.deficit ? "short" : ""}>{bn(v.deficit)}</td></tr>))}</tbody>
+          </table></div>
+        </Card>
+      )}</Loading>
+      <Loading r={plan}>{(p) => <OverflowPanel p={p} city={sel.city} ops={ops} setOps={setOps} />}</Loading>
+    </>
+  );
+}
+
+export function HospitalView({ meta, sel, set, ops, setOps }) {
   const scope = sel.ward ? { ward_id: sel.ward } : { city: sel.city };
   const cmp = useAsync(() => api("compare", { issue_date: sel.issue, ...scope }), [sel.ward, sel.city, sel.issue]);
   const hist = useAsync(() => api("history", { issue_date: sel.issue, weeks: 52, ...scope }), [sel.ward, sel.city, sel.issue]);
@@ -267,6 +381,7 @@ export function HospitalView({ meta, sel, set }) {
           </>
         );
       }}</Loading>
+      <HospitalBeds sel={sel} ops={ops} setOps={setOps} />
     </>
   );
 }

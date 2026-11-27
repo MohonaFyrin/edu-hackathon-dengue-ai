@@ -97,7 +97,8 @@ export function actions(role, h, tier) {
           4: tx("৪ সপ্তাহ: পরীক্ষাগার-সামগ্রী ও সরবরাহের মজুত সাধারণভাবে যাচাই করুন।", "4 weeks: check laboratory and supply stocks in general terms.") }[h] },
         { t: hi ? tx("এলাকায় আপেক্ষিক রোগীর চাপ বেশি: রেফারেল ও সমন্বয়ের পথ দেখে রাখুন।", "Relative case burden is higher here: confirm referral and coordination routes.")
           : tx("আপেক্ষিক চাপ কম বা মাঝারি: নিয়মিত প্রস্তুতি বজায় রাখুন।", "Relative burden is low or moderate: maintain routine readiness.") },
-        { t: tx("এটি কমিউনিটির নথিভুক্ত রোগীর অনুমান; ভর্তি, শয্যা-দখল বা চিকিৎসা-চাহিদার পূর্বাভাস নয়।", "This is a community case estimate, not a forecast of admissions, bed occupancy or clinical demand.") },
+        { t: tx("বেড-চাহিদা = অনুমানিত রোগী × ডেটাসেটের অনুপাত (প্রতি রোগীতে ০.২৯৮ বেড); ধারণক্ষমতা ধরে নেওয়া মান। এটি পরিকল্পনার সহায়ক, ভর্তির পূর্বাভাস নয়।",
+          "Bed demand = estimated cases × the dataset's ratio (0.298 beds per case); capacity is an assumed value. A planning aid, not an admissions forecast.") },
       ],
     };
   }
@@ -147,14 +148,14 @@ export const edu = () => ({
   sources: [["WHO: Dengue and severe dengue", "https://www.who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue"], ["CDC: Dengue", "https://www.cdc.gov/dengue/"]],
 });
 
-// Verified (cross-checked in news reports and government-project listings, Nov 2026). Re-check before publishing.
+// Verified on official .gov.bd pages on 2026-11-27 (bangladesh.gov.bd lists 999; 16263.dghs.gov.bd and dghs.gov.bd list 16263).
 export const hotlines = () => [
-  { id: "999", number: "999", tel: "999", name: tx("জাতীয় জরুরি সেবা", "National Emergency Service"),
-    use: tx("পুলিশ, ফায়ার সার্ভিস ও অ্যাম্বুলেন্সের জরুরি সহায়তা (২৪ ঘণ্টা)", "Emergency police, fire and ambulance help (24 hours)"),
-    src: "https://bdnews24.com/bangladesh/bangladesh-officially-launches-999-emergency-helpline", srcName: "bdnews24" },
-  { id: "16263", number: "16263", tel: "16263", name: tx("স্বাস্থ্য বাতায়ন (স্বাস্থ্য অধিদপ্তর)", "Shastho Batayon (DGHS health call centre)"),
-    use: tx("স্বাস্থ্য পরামর্শ ও তথ্য; ডেঙ্গু চিকিৎসা-সহায়তায় ২০২৩ সালে ঘোষিত। চালু আছে কিনা dghs.gov.bd-এ দেখে নিন।", "Health advice and information; announced for dengue care in 2023. Check dghs.gov.bd for current status."),
-    src: "https://www.dhakatribune.com/bangladesh/319307/dengue-dghs-introduces-hotline-number", srcName: "Dhaka Tribune" },
+  { id: "999", number: "999", tel: "999", name: tx("জাতীয় জরুরি সেবা", "National Emergency Service"), short: tx("জরুরি", "Emergency"),
+    use: tx("পুলিশ, ফায়ার সার্ভিস ও অ্যাম্বুলেন্সের জরুরি সহায়তা", "Emergency police, fire and ambulance help"),
+    src: "https://bangladesh.gov.bd/", srcName: "bangladesh.gov.bd" },
+  { id: "16263", number: "16263", tel: "16263", name: tx("স্বাস্থ্য বাতায়ন (স্বাস্থ্য অধিদপ্তর)", "Shastho Batayon (DGHS health line)"), short: tx("স্বাস্থ্য বাতায়ন", "Health line"),
+    use: tx("২৪ ঘণ্টা স্বাস্থ্য পরামর্শ", "Health advice, 24 hours"),
+    src: "https://16263.dghs.gov.bd/", srcName: "16263.dghs.gov.bd" },
   { id: "dghs", number: "dghs.gov.bd", href: "https://www.dghs.gov.bd", name: tx("স্বাস্থ্য অধিদপ্তর (DGHS)", "Directorate General of Health Services (DGHS)"),
     use: tx("সরকারি স্বাস্থ্য তথ্য ও বিজ্ঞপ্তি", "Official health information and notices"), src: "https://www.dghs.gov.bd", srcName: "dghs.gov.bd" },
 ];

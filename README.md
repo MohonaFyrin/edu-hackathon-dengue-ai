@@ -2,6 +2,12 @@
 
 The Bangla/English dashboard replays weekly dengue forecasts for 60 wards across five cities. Select an issue week and compare estimated cases and risk tiers two, three or four weeks ahead. The officer view ranks wards for review, while the hospital view supports preparedness discussions.
 
+## Round 2 (Phase 2 onsite)
+
+One-time setup with internet: `setup.cmd path\to\bangladesh_dengue_large_dataset_onsite.xlsx`. Then `start.cmd` runs everything offline and `stop.cmd` stops it. Modules, methods, data sources and limitations: [docs/ROUND2.md](docs/ROUND2.md). Asset licences: [ASSETS.md](ASSETS.md).
+
+Round 2 code was written with Claude Code (Anthropic) under the team's direction; every number shown comes from local code and data, and the tests in `backend/tests` and `frontend/e2e` were run locally.
+
 ## Run locally on Windows
 
 Use Python 3.14.6 and Node.js 22 with npm. Run these commands in PowerShell. Install dependencies once. The existing model is used directly.

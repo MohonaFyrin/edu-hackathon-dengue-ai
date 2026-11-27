@@ -16,7 +16,7 @@ const DOT = { "t-low": "#2e7d4f", "t-medium": "#c79a00", "t-high": "#d9622b", "t
 const px = (lon) => 20 + ((lon - 90.3) / 1.6) * 260;
 const py = (lat) => 20 + ((24.1 - lat) / 1.9) * 220;
 
-function Tile({ w, selected, rank, onPick }) {
+function Tile({ w, selected, rank, onPick, extra }) {
   const t = TIER[w.risk_tier];
   return (
     <button
@@ -30,11 +30,14 @@ function Tile({ w, selected, rank, onPick }) {
       <strong>{wardLabel(w.ward_id)}</strong>
       <span>{t.sym} {tierName(w.risk_tier)}</span>
       <span>{bn(w.predicted_cases, 1)} {tx("জন", "cases")}</span>
+      {extra?.(w)}
     </button>
   );
 }
 
-export function WardMap({ meta, wards, activeCity = "", selectedWard = "", ranks = {}, onPick, onCity }) {
+// Phase 2 additions (optional, default off): `extra(w)` adds overlay lines inside a tile; `mini={false}` hides the
+// city-dot picture when the Map Hub draws real district outlines instead.
+export function WardMap({ meta, wards, activeCity = "", selectedWard = "", ranks = {}, onPick, onCity, extra, mini = true }) {
   const cityOf = Object.fromEntries(meta.wards.map((w) => [w.ward_id, w.city]));
   const list = wards.map((w) => ({ ...w, city: cityOf[w.ward_id] || w.city }));
   const cities = meta.cities.filter((c) => list.some((w) => w.city === c));
@@ -51,8 +54,8 @@ export function WardMap({ meta, wards, activeCity = "", selectedWard = "", ranks
     }));
 
   return (
-    <div className="wm-wrap">
-      <figure className="wm-mini">
+    <div className={mini ? "wm-wrap" : "wm-wrap wm-solo"}>
+      {mini && <figure className="wm-mini">
         <svg viewBox="0 0 300 260" className="wm-svg" role="group" aria-label={tx("শহরের অবস্থান", "City positions")}>
           {cities.map((c) => {
             const [lat, lon] = CITY_XY[c];
@@ -93,6 +96,7 @@ export function WardMap({ meta, wards, activeCity = "", selectedWard = "", ranks
                     selected={w.ward_id === selectedWard}
                     rank={ranks[w.ward_id]}
                     onPick={onPick}
+                    extra={extra}
                   />
                 </li>
               ))}

@@ -76,3 +76,9 @@ No map polygons or coordinates exist in the dataset, so the risk view is an acce
 The final eligible test issue weeks were 2025-12-15, 2025-12-08 and 2025-12-01 for the 2-, 3- and 4-week horizons respectively. Each has a recorded target by 2025-12-29. Reported metrics come from the team ML handoff (backend/reports/validation.json); the saved model in that handoff and this repository have identical SHA-256 hashes.
 
 Startup checks the CSV fingerprint against the saved model. A missing input, mismatched CSV or absent validation report prevents startup. Use the matching private inputs described in the README. The application serves bundled assets locally after the frontend has been built.
+
+
+## Round 2 additions
+
+`backend/operations.py` (pure, deterministic engine: demand, allocation, crews, overflow, simulation) → `backend/phase2.py` (`/api/plan`, `/api/simulate`, `/api/dispatch`, `/api/brief`, `/api/export`) and `backend/community.py` (`/api/geo/districts`, `/api/facilities`, `/api/reports` on stdlib SQLite). One plan computation feeds the screen, SMS, brief and CSV, so they always agree. Frontend adds `ops.jsx`, `MapHub.jsx` (wraps the team's `WardMap.jsx`), `Report.jsx` and `round2.css`. The Phase 1 model, split and tiers are unchanged (retrain reproduced a byte-identical model). Details: [docs/ROUND2.md](docs/ROUND2.md).
+
