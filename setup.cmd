@@ -9,14 +9,19 @@ where py >nul 2>nul && (py -3 -c "import sys; sys.exit(sys.version_info < (3, 12
 if not defined PY python -c "import sys; sys.exit(sys.version_info < (3, 12))" && set "PY=python"
 if not defined PY (echo Python 3.12 or newer is required. & goto failed)
 if not exist .venv\Scripts\python.exe %PY% -m venv .venv || goto failed
-.venv\Scripts\python.exe -m pip install -q -r backend\requirements.txt || goto failed
+REM requirements-dev adds openpyxl (reads the XLSX) and pytest (self-check below).
+.venv\Scripts\python.exe -m pip install -q -r backend\requirements.txt -r backend\requirements-dev.txt || goto failed
 
 echo [2/5] Dataset
-if not exist backend\data\official.csv (
+set "NEED_DATA="
+if not exist backend\data\official.csv set "NEED_DATA=1"
+if not exist backend\data\supply.csv set "NEED_DATA=1"
+if defined NEED_DATA (
   if "%~1"=="" (echo Pass the onsite XLSX path: setup.cmd path\to\dataset.xlsx & goto failed)
   pushd backend & ..\.venv\Scripts\python.exe prepare_data.py "%~f1" & popd
 )
 if not exist backend\data\official.csv goto failed
+if not exist backend\data\supply.csv goto failed
 
 echo [3/5] Model and validation report
 pushd backend

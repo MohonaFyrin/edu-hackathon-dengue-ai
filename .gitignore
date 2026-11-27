@@ -18,3 +18,4 @@ backend/reports/validation.json
 backend/data/supply.csv
 backend/var/
 .run/
+deploy/

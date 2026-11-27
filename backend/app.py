@@ -16,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from common import (DATA_CSV, FEATURES, HORIZONS, MODEL_PATH, REPORTS, ROOT, SUPPLY_CSV, TIERS,
+from operations import demand_from_cases
+from common import (DATA_CSV, FEATURES, HORIZONS, MODEL_PATH, REPORTS, ROOT, TIERS,
                     TRAIN_END, VAL_END, add_features, estimate_tier_index, load_data, sha256_file)
 
 Horizon = Annotated[int, Query(ge=2, le=4, description="Weeks ahead: 2, 3 or 4")]
@@ -57,9 +58,10 @@ class Store:
         # Phase 2: default bed capacity = each ward's 90th-percentile weekly bed requirement in the
         # training period (<= 2022), minimum 1. The dataset has no capacity column, so this is a
         # disclosed planning assumption that officers can scale or override.
-        supply = pd.read_csv(SUPPLY_CSV, parse_dates=["date"])
-        tr = supply[supply.date <= TRAIN_END]
-        self.default_capacity = (tr.groupby("ward_id").hospital_beds_required.quantile(0.9, interpolation="higher")
+        # Bed requirement is an exact function of cases (0.298 x cases, round half up; verified on all
+        # 31,320 rows in tests), so it is derived from official.csv and supply.csv is not needed at runtime.
+        beds = pd.Series(demand_from_cases(train.dengue_cases)["hospital_beds_required"], index=train.index)
+        self.default_capacity = (beds.groupby(train.ward_id).quantile(0.9, interpolation="higher")
                                  .clip(lower=1).astype(int).to_dict())
 
     def mode(self, target: date) -> str:
