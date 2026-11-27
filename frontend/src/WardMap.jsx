@@ -82,7 +82,7 @@ export function WardMap({ meta, wards, activeCity = "", selectedWard = "", ranks
         <figcaption className="wm-note">
           {tx("বিন্দুর রং: ওই শহরের সবচেয়ে উচ্চ ঝুঁকির স্তর।", "Dot colour: highest risk tier in that city.")}
         </figcaption>
-      </figure>}
+      </figure>
 
       <div className="wm-cities">
         {groups.map(({ c, items }) => (
